@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Human Call Bridge</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 450px;
+            margin: 40px auto;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        button {
+            background: black;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Call Two People</h2>
+
+<form action="/make-call" method="post">
+
+    <label>Person A (called first)</label>
+    <input name="person_a" placeholder="+8801XXXXXXXXX" required>
+
+    <label>Person B (connected second)</label>
+    <input name="person_b" placeholder="+8801XXXXXXXXX" required>
+
+    <button type="submit">Start Call</button>
+
+</form>
+
+</body>
+</html>
