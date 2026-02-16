@@ -4,6 +4,7 @@ from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse
 from dotenv import load_dotenv
 import os
+from fastapi import Request
 
 load_dotenv()
 
@@ -20,6 +21,9 @@ client = Client(ACCOUNT_SID, AUTH_TOKEN)
 # temporary storage
 call_data = {}
 
+call_state = {
+    "status": "idle"
+}
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -38,31 +42,72 @@ async def make_call(
     """
 
     call_data["person_b"] = person_b
+    call_state["status"] = "calling_a"
+
+    # call = client.calls.create(
+    #     to=person_a,
+    #     from_=TWILIO_NUMBER,
+    #     url=f"{BASE_URL}/twilio-webhook"
+    # )
+
+    # return JSONResponse({
+    #     "success": True,
+    #     "call_sid": call.sid
+    # })
 
     call = client.calls.create(
         to=person_a,
         from_=TWILIO_NUMBER,
-        url=f"{BASE_URL}/twilio-webhook"
+        url=f"{BASE_URL}/twilio-webhook",
+        status_callback=f"{BASE_URL}/status-callback",
+        status_callback_event=["initiated", "ringing", "answered", "completed"],
+        status_callback_method="POST"
     )
 
-    return JSONResponse({
-        "success": True,
-        "call_sid": call.sid
-    })
+    return {"success": True}
 
+
+# @app.api_route("/twilio-webhook", methods=["GET", "POST"])
+# def twilio_webhook():
+
+#     response = VoiceResponse()
+
+#     # Connect second person
+#     response.dial(
+#         call_data["person_b"],
+#         callerId=TWILIO_NUMBER
+#     )
+
+#     return Response(
+#         content=str(response),
+#         media_type="application/xml"
+#     )
 
 @app.api_route("/twilio-webhook", methods=["GET", "POST"])
 def twilio_webhook():
 
+    call_state["status"] = "calling_b"
+
     response = VoiceResponse()
 
-    # Connect second person
     response.dial(
         call_data["person_b"],
         callerId=TWILIO_NUMBER
     )
 
-    return Response(
-        content=str(response),
-        media_type="application/xml"
-    )
+    return Response(str(response), media_type="application/xml")
+
+
+@app.post("/status-callback")
+async def status_callback(request: Request):
+    form = await request.form()
+    call_status = form.get("CallStatus")
+
+    if call_status == "completed":
+        call_state["status"] = "completed"
+
+    return {"ok": True}
+
+@app.get("/call-status")
+def get_status():
+    return call_state

@@ -1,41 +1,154 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Human Call Bridge</title>
+    <title>Call Two People</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial;
-            max-width: 450px;
-            margin: 40px auto;
+            font-family: Arial, sans-serif;
+            background: #f3f3f6;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        input, button {
+
+        .card {
             width: 100%;
-            padding: 10px;
-            margin-top: 10px;
+            max-width: 420px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
         }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            margin-bottom: 18px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #9d7fc5;
+        }
+
         button {
-            background: black;
-            color: white;
+            width: 100%;
+            padding: 13px;
+            background: #a98bcc;
             border: none;
+            color: white;
+            font-size: 15px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #9373bb;
+        }
+
+        .status {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
         }
     </style>
 </head>
+
 <body>
 
-<h2>Call Two People</h2>
+<div class="card">
 
-<form action="/make-call" method="post">
+    <h2>Call Two People</h2>
 
-    <label>Person A (called first)</label>
-    <input name="person_a" placeholder="+8801XXXXXXXXX" required>
+    <form id="callForm">
 
-    <label>Person B (connected second)</label>
-    <input name="person_b" placeholder="+8801XXXXXXXXX" required>
+        <label>Person A (called first)</label>
+        <input id="personA" placeholder="+8801XXXXXXXXX" required>
 
-    <button type="submit">Start Call</button>
+        <label>Person B (connected second)</label>
+        <input id="personB" placeholder="+8801XXXXXXXXX" required>
 
-</form>
+        <button type="submit">Start Call</button>
+
+        <div id="status" class="status"></div>
+
+    </form>
+
+</div>
+
+<script>
+const statusBox = document.getElementById("status");
+
+document.getElementById("callForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const a = personA.value.trim();
+    const b = personB.value.trim();
+
+    const formData = new FormData();
+    formData.append("person_a", a);
+    formData.append("person_b", b);
+
+    await fetch("/make-call", {
+        method: "POST",
+        body: formData
+    });
+
+    statusBox.innerText = "Calling Person A...";
+    startStatusPolling();
+});
+
+
+async function startStatusPolling() {
+
+    const interval = setInterval(async () => {
+
+        const res = await fetch("/call-status");
+        const data = await res.json();
+
+        if (data.status === "calling_a") {
+            statusBox.innerText = "Calling Person A...";
+        }
+
+        if (data.status === "calling_b") {
+            statusBox.innerText = "Person A answered. Calling Person B...";
+        }
+
+        if (data.status === "completed") {
+            statusBox.innerText = "Call finished.";
+            clearInterval(interval);
+        }
+
+    }, 1500);
+}
+</script>
+
 
 </body>
 </html>
